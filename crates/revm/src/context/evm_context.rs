@@ -156,7 +156,8 @@ impl<DB: Database> EvmContext<DB> {
         inputs: &CallInputs,
     ) -> Result<FrameOrResult, EVMError<DB::Error>> {
         let gas = Gas::new(inputs.gas_limit);
-
+        
+        // execute call 
         let return_result = |instruction_result: InstructionResult| {
             Ok(FrameOrResult::new_call_result(
                 InterpreterResult {
@@ -250,6 +251,7 @@ impl<DB: Database> EvmContext<DB> {
             let contract =
                 Contract::new_with_context(inputs.input.clone(), bytecode, Some(code_hash), inputs);
             // Create interpreter and executes call and push new CallStackFrame.
+            // after preparing the call frame.
             Ok(FrameOrResult::new_call_frame(
                 inputs.return_memory_offset.clone(),
                 checkpoint,

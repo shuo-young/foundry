@@ -192,7 +192,8 @@ impl MultiContractRunner {
                 .map(|&(id, contract)| {
                     let _guard = tokio_handle.enter();
                     tests_progress.inner.lock().start_suite_progress(&id.identifier());
-
+                    
+                    // run the test suite
                     let result = self.run_test_suite(
                         id,
                         contract,
@@ -238,6 +239,7 @@ impl MultiContractRunner {
         let identifier = artifact_id.identifier();
         let mut span_name = identifier.as_str();
 
+        // Create cheats config
         let cheats_config = CheatsConfig::new(
             &self.config,
             self.evm_opts.clone(),
@@ -251,6 +253,7 @@ impl MultiContractRunner {
             .with_decode_internal(self.decode_internal)
             .with_verbosity(self.evm_opts.verbosity);
 
+        // 配置executor
         let executor = ExecutorBuilder::new()
             .inspectors(|stack| {
                 stack
@@ -287,6 +290,7 @@ impl MultiContractRunner {
             tokio_handle,
             span,
         };
+        // 运行测试
         let r = runner.run_tests(filter, &self.test_options, self.known_contracts.clone());
 
         debug!(duration=?r.duration, "executed all tests in contract");

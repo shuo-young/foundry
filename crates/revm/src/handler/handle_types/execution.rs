@@ -186,12 +186,14 @@ impl<'a, EXT, DB: Database> ExecutionHandler<'a, EXT, DB> {
     }
 
     /// Call frame call handler.
+    /// 还是这里调用的revm opcode
     #[inline]
     pub fn call(
         &self,
         context: &mut Context<EXT, DB>,
         inputs: Box<CallInputs>,
     ) -> Result<FrameOrResult, EVMError<DB::Error>> {
+        println!("call inputs {:?}", inputs);
         (self.call)(context, inputs)
     }
 

@@ -73,6 +73,7 @@ impl<'a, EXT, DB: Database> Evm<'a, EXT, DB> {
     }
 
     /// Runs main call loop.
+    /// simulate call stack
     #[inline]
     pub fn run_the_loop(&mut self, first_frame: Frame) -> Result<FrameResult, EVMError<DB::Error>> {
         let mut call_stack: Vec<Frame> = Vec::with_capacity(1025);
@@ -91,6 +92,7 @@ impl<'a, EXT, DB: Database> Evm<'a, EXT, DB> {
 
         loop {
             // Execute the frame.
+            // 这里的frame可以理解为一个流，流以call为入口，然后根据call的结果，继续流向create或者return，知道这个externl call return
             let next_action =
                 self.handler
                     .execute_frame(stack_frame, &mut shared_memory, &mut self.context)?;
@@ -225,6 +227,8 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
     /// This function will validate the transaction.
     #[inline]
     pub fn transact(&mut self) -> EVMResult<DB::Error> {
+        // print transactio info
+        println!("Transact: {:?}", self.context.evm.env.tx);
         let initial_gas_spend = self
             .preverify_transaction_inner()
             .inspect_err(|_e| self.clear())?;
@@ -339,6 +343,7 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
         // apply EIP-7702 auth list.
         let eip7702_gas_refund = pre_exec.apply_eip7702_auth_list(ctx)? as i64;
 
+        // init executor
         let exec = self.handler.execution();
         // call inner handling of call/create
         let first_frame_or_result = match ctx.evm.env.tx.transact_to {

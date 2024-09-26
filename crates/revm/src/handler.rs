@@ -61,6 +61,7 @@ impl<'a, EXT, DB: Database> EvmHandler<'a, EXT, DB> {
     pub fn mainnet<SPEC: Spec>() -> Self {
         Self {
             cfg: HandlerCfg::new(SPEC::SPEC_ID),
+            // 初始化opcode表
             instruction_table: InstructionTables::new_plain::<SPEC>(),
             registers: Vec::new(),
             validation: ValidationHandler::new::<SPEC>(),
@@ -115,6 +116,7 @@ impl<'a, EXT, DB: Database> EvmHandler<'a, EXT, DB> {
         shared_memory: &mut SharedMemory,
         context: &mut Context<EXT, DB>,
     ) -> Result<InterpreterAction, EVMError<DB::Error>> {
+        // intruction table就是opcode
         self.execution
             .execute_frame(frame, shared_memory, &self.instruction_table, context)
     }

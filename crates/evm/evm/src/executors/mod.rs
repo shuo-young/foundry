@@ -329,7 +329,9 @@ impl Executor {
         rd: Option<&RevertDecoder>,
     ) -> Result<CallResult, EvmError> {
         let calldata = Bytes::from(func.abi_encode_input(args)?);
+        // 构建calldata执行tx
         let result = self.call_raw(from, to, calldata, value)?;
+        // decode revm返回的callres
         result.into_decoded_result(func, rd)
     }
 
@@ -394,19 +396,25 @@ impl Executor {
     pub fn call_with_env(&self, mut env: EnvWithHandlerCfg) -> eyre::Result<RawCallResult> {
         let mut inspector = self.inspector().clone();
         let mut backend = CowBackend::new_borrowed(self.backend());
+        // key function for entering the EVM
         let result = backend.inspect(&mut env, &mut inspector)?;
+        println!("call with env res {:?}", result);
         convert_executed_result(env, inspector, result, backend.has_snapshot_failure())
     }
 
     /// Execute the transaction configured in `env.tx`.
     #[instrument(name = "transact", level = "debug", skip_all)]
     pub fn transact_with_env(&mut self, mut env: EnvWithHandlerCfg) -> eyre::Result<RawCallResult> {
+        // this inspector init includes the tracing ot opcode execution, which is implemented in revm-inspectors
         let mut inspector = self.inspector().clone();
+        // println!("inspector");
+        // println!("{:?}", self.inspector);
         let backend = self.backend_mut();
-        let result = backend.inspect(&mut env, &mut inspector)?;
+        let result = backend.inspect(&mut env, &mut inspector)?; // when call inspect funciton, the trace is stored in inspector
         let mut result =
             convert_executed_result(env, inspector, result, backend.has_snapshot_failure())?;
         self.commit(&mut result);
+        println!("transact with env res {:?}", result);
         Ok(result)
     }
 

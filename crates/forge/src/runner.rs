@@ -249,6 +249,8 @@ impl<'a> ContractRunner<'a> {
     }
 
     /// Runs all tests for a contract whose names match the provided regular expression
+    /// 执行所有与提供的正则表达式匹配的合同名称的测试，test_()开头的函数
+    /// 入口方法
     pub fn run_tests(
         mut self,
         filter: &dyn TestFilter,
@@ -314,7 +316,7 @@ impl<'a> ContractRunner<'a> {
 
         let prev_tracer = self.executor.inspector_mut().tracer.take();
         if prev_tracer.is_some() || has_invariants {
-            self.executor.set_tracing(TraceMode::Call);
+            self.executor.set_tracing(TraceMode::Debug); // 设置trace输出的级别
         }
 
         let setup_time = Instant::now();
@@ -433,6 +435,8 @@ impl<'a> ContractRunner<'a> {
         };
 
         // Run current unit test.
+        // 通过构建call，调用executor执行
+        // 这里吧revm直接当虚拟机用，revm为黑盒
         let (mut raw_call_result, reason) = match executor.call(
             self.sender,
             address,

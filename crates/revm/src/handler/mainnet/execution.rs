@@ -16,6 +16,8 @@ use revm_interpreter::{
 use std::boxed::Box;
 
 /// Execute frame
+/// 这里是具体的执行opcode的函数
+/// 每次执行都会返回下一个action的信息
 #[inline]
 pub fn execute_frame<SPEC: Spec, EXT, DB: Database>(
     frame: &mut Frame,
@@ -24,6 +26,10 @@ pub fn execute_frame<SPEC: Spec, EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
 ) -> Result<InterpreterAction, EVMError<DB::Error>> {
     let interpreter = frame.interpreter_mut();
+    // 当前环境下构建一个空memory，执行完后将memory返回
+    // 打印一下interpreter
+    println!("current opcode: {:?}", interpreter.current_opcode());
+    
     let memory = mem::replace(shared_memory, EMPTY_SHARED_MEMORY);
     let next_action = match instruction_tables {
         InstructionTables::Plain(table) => interpreter.run(memory, table, context),
@@ -68,6 +74,7 @@ pub fn call<SPEC: Spec, EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
     inputs: Box<CallInputs>,
 ) -> Result<FrameOrResult, EVMError<DB::Error>> {
+    // key exeuction
     context.evm.make_call_frame(&inputs)
 }
 

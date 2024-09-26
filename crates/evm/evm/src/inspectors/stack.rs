@@ -1,6 +1,5 @@
 use super::{
-    Cheatcodes, CheatsConfig, ChiselState, CoverageCollector, Fuzzer, LogCollector,
-    TracingInspector,
+    Cheatcodes, CheatsConfig, ChiselState, CoverageCollector, Fuzzer, LogCollector, OpcodeTracer, TracingInspector
 };
 use alloy_primitives::{Address, Bytes, Log, TxKind, U256};
 use foundry_cheatcodes::CheatcodesExecutor;
@@ -60,6 +59,8 @@ pub struct InspectorStackBuilder {
     pub enable_isolation: bool,
     /// Whether to enable Alphanet features.
     pub alphanet: bool,
+    /// Whether to enable the opcode tracer.
+    pub opcode_tracer: Option<bool>,
 }
 
 impl InspectorStackBuilder {
@@ -150,6 +151,12 @@ impl InspectorStackBuilder {
         self
     }
 
+    #[inline]
+    pub fn enable_opcode_tracer(mut self, yes: bool) -> Self {
+        self.opcode_tracer = Some(yes);
+        self
+    }
+
     /// Builds the stack of inspectors to use when transacting/committing on the EVM.
     pub fn build(self) -> InspectorStack {
         let Self {
@@ -164,8 +171,15 @@ impl InspectorStackBuilder {
             chisel_state,
             enable_isolation,
             alphanet,
+            opcode_tracer,
         } = self;
         let mut stack = InspectorStack::new();
+
+        if opcode_tracer.unwrap_or(false) {
+            stack.set_opcode_tracer(OpcodeTracer::new());
+        }
+
+        // stack.inner.opcode_tracer = Some(OpcodeTracer::new());
 
         // inspectors
         if let Some(config) = cheatcodes {
@@ -288,6 +302,7 @@ pub struct InspectorStackInner {
     pub log_collector: Option<LogCollector>,
     pub printer: Option<CustomPrintTracer>,
     pub tracer: Option<TracingInspector>,
+    pub opcode_tracer: Option<OpcodeTracer>,  // 新增字段
     pub enable_isolation: bool,
     pub alphanet: bool,
 
@@ -418,6 +433,11 @@ impl InspectorStack {
     #[inline]
     pub fn print(&mut self, yes: bool) {
         self.printer = yes.then(Default::default);
+    }
+
+    #[inline]
+    pub fn set_opcode_tracer(&mut self, tracer: OpcodeTracer) {
+        self.inner.opcode_tracer = Some(tracer);
     }
 
     /// Set whether to enable the tracer.
@@ -654,6 +674,10 @@ impl<'a, DB: DatabaseExt> Inspector<DB> for InspectorStackRefMut<'a> {
             self,
             ecx
         );
+        // 捕获 OpcodeTracer 信息
+        if let Some(opcode_tracer) = &mut self.inner.opcode_tracer {
+            opcode_tracer.step(interpreter, ecx);
+        }
     }
 
     fn step_end(&mut self, interpreter: &mut Interpreter, ecx: &mut EvmContext<DB>) {

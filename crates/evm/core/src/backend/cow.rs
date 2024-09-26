@@ -61,6 +61,8 @@ impl<'a> CowBackend<'a> {
     ///
     /// Note: in case there are any cheatcodes executed that modify the environment, this will
     /// update the given `env` with the new values.
+    /// 
+    /// evm crate is used to call revm to execute the transaction with given configuartion.
     #[instrument(name = "inspect", level = "debug", skip_all)]
     pub fn inspect<'b, I: InspectorExt<&'b mut dyn DatabaseExt>>(
         &'b mut self,
@@ -77,8 +79,9 @@ impl<'a> CowBackend<'a> {
             inspector,
         );
 
+        // 进入revm的执行函数
         let res = evm.transact().wrap_err("backend: failed while inspecting")?;
-
+        // println!("inspect: {:?}", res);
         env.env = evm.context.evm.inner.env;
 
         Ok(res)

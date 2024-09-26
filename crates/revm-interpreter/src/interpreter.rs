@@ -357,9 +357,11 @@ impl Interpreter {
         // SAFETY: In analysis we are doing padding of bytecode so that we are sure that last
         // byte instruction is STOP so we are safe to just increment program_counter bcs on last instruction
         // it will do noop and just stop execution of this contract
+        // offset ++
         self.instruction_pointer = unsafe { self.instruction_pointer.offset(1) };
 
         // execute instruction.
+        // the key is to find where is the opcode executes
         (instruction_table[opcode as usize])(self, host)
     }
 
@@ -381,6 +383,7 @@ impl Interpreter {
         self.next_action = InterpreterAction::None;
         self.shared_memory = shared_memory;
         // main loop
+        // 执行opcode
         while self.instruction_result == InstructionResult::Continue {
             self.step(instruction_table, host);
         }

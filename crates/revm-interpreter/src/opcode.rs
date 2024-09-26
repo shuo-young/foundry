@@ -417,6 +417,7 @@ macro_rules! opcodes {
         static NAME_TO_OPCODE: phf::Map<&'static str, OpCode> = stringify_with_cb! { phf_map_cb; $($name)* };
 
         /// Returns the instruction function for the given opcode and spec.
+        /// this maps opcode to its name
         pub const fn instruction<H: Host + ?Sized, SPEC: Spec>(opcode: u8) -> Instruction<H> {
             match opcode {
                 $($name => $f,)*

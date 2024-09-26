@@ -359,6 +359,8 @@ impl TestArgs {
             InternalTraceMode::None
         };
 
+        println!("{:?}", decode_internal);
+
         // Prepare the test builder.
         let config = Arc::new(config);
         let runner = MultiContractRunnerBuilder::new(config.clone())
@@ -395,6 +397,8 @@ impl TestArgs {
         )?;
 
         let libraries = runner.libraries.clone();
+        // execution function
+        // 
         let mut outcome = self.run_tests(runner, config, verbosity, &filter, &output).await?;
 
         if should_draw {
@@ -523,6 +527,7 @@ impl TestArgs {
         let (tx, rx) = channel::<(String, SuiteResult)>();
         let timer = Instant::now();
         let show_progress = config.show_progress;
+        // main entrance of the test
         let handle = tokio::task::spawn_blocking({
             let filter = filter.clone();
             move || runner.test(&filter, tx, show_progress)

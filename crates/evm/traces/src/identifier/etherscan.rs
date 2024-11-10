@@ -2,7 +2,7 @@ use super::{AddressIdentity, TraceIdentifier};
 use crate::debug::ContractSources;
 use alloy_primitives::Address;
 use foundry_block_explorers::{
-    contract::{ContractMetadata, Metadata},
+    contract::{ContractMetadata, Metadata, SourceCodeEntry, SourceCodeMetadata},
     errors::EtherscanError,
 };
 use foundry_common::compile::etherscan_project;
@@ -14,7 +14,7 @@ use futures::{
 };
 use std::{
     borrow::Cow,
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     pin::Pin,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -24,6 +24,7 @@ use std::{
 use tokio::time::{Duration, Interval};
 
 /// A trace identifier that tries to identify addresses using Etherscan.
+#[derive(Clone)]
 pub struct EtherscanIdentifier {
     /// The Etherscan client
     client: Arc<foundry_block_explorers::Client>,
@@ -91,6 +92,16 @@ impl EtherscanIdentifier {
         }
 
         Ok(sources)
+    }
+
+    pub async fn get_source_code_of_contract(&mut self, address: Address) -> Vec<Metadata> {
+        if let Ok(metadata) = self.client.contract_source_code(address).await {
+            // 遍历 metadata.items，寻找符合条件的 source_code
+            return metadata.items;
+        } else if let Err(err) = self.client.contract_source_code(address).await {
+            warn!(target: "traces::etherscan", "could not get etherscan info: {:?}", err);
+        }
+        Vec::new()
     }
 }
 

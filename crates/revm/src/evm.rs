@@ -1,3 +1,5 @@
+use revm_precompile::Address;
+
 use crate::{
     builder::{EvmBuilder, HandlerStage, SetGenericStage},
     db::{Database, DatabaseCommit, EmptyDB},
@@ -89,14 +91,24 @@ impl<'a, EXT, DB: Database> Evm<'a, EXT, DB> {
 
         // Peek the last stack frame.
         let mut stack_frame = call_stack.last_mut().unwrap();
-
+        // println!("LOG: run_the_loop: {:?}", stack_frame);
         loop {
             // Execute the frame.
-            // 这里的frame可以理解为一个流，流以call为入口，然后根据call的结果，继续流向create或者return，知道这个externl call return
+            // 这里的frame可以理解为一个流，流以call为入口，然后根据call的结果，继续流向create或者return，直到这个externl call return
             let next_action =
                 self.handler
                     .execute_frame(stack_frame, &mut shared_memory, &mut self.context)?;
-
+            // println!("next action in the loop: {:?}", next_action);
+            
+            // 一定是在这里check next_action是不是call了我们标记的vulnerable contract
+            // 帮我看一下这个next_action是不是call了我们标记的vulnerable contract
+            let vulnerable_contract_address = Address::new([0x00; 20]);
+            if self.context.evm.env.tx.transact_to == TxKind::Call(vulnerable_contract_address) {
+                println!("LOG: call to vulnerable contract detected: {:?}", vulnerable_contract_address);
+            }
+            // 这里动态执行的过程不太好log，想了一下还是在call执行之后的callraw res里找inner tx的信息
+            // 然后标记callto的contract是不是vulnerable contract，找到funccall的hash，decode data，拿到函数名和签名，找到对应的合约源码和函数代码
+            // self.context.evm.env.tx.data;
             // Take error and break the loop, if any.
             // This error can be set in the Interpreter when it interacts with the context.
             self.context.evm.take_error()?;
@@ -228,7 +240,7 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
     #[inline]
     pub fn transact(&mut self) -> EVMResult<DB::Error> {
         // print transactio info
-        println!("Transact: {:?}", self.context.evm.env.tx);
+        // println!("LOG: transact: {:?}", (self.context.evm.env.tx.caller, self.context.evm.env.tx.transact_to));
         let initial_gas_spend = self
             .preverify_transaction_inner()
             .inspect_err(|_e| self.clear())?;
@@ -371,6 +383,8 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
         };
 
         // Starts the main running loop.
+        // 所有的call/create都会在这个loop中执行，上面的只是构造了第一个frame
+        // 可以在这个loop里面插入识别逻辑
         let mut result = match first_frame_or_result {
             FrameOrResult::Frame(first_frame) => self.run_the_loop(first_frame)?,
             FrameOrResult::Result(result) => result,

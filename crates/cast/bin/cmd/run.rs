@@ -229,7 +229,7 @@ impl RunArgs {
 
         // Execute our transaction
         let result = {
-            executor.set_trace_printer(self.trace_printer);
+            executor.set_trace_printer(true); // set to true if we want to print traces
 
             configure_tx_env(&mut env, &tx.inner);
 

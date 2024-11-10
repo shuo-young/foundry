@@ -40,6 +40,7 @@ mod decoder;
 pub use decoder::{CallTraceDecoder, CallTraceDecoderBuilder};
 
 pub mod debug;
+pub mod dump;
 pub use debug::DebugTraceIdentifier;
 
 pub mod folded_stack_trace;
@@ -332,7 +333,7 @@ impl TraceMode {
                     StackSnapshotType::None
                 },
                 record_logs: true,
-                record_state_diff: false,
+                record_state_diff: true, // open record
                 record_returndata_snapshots: self.is_debug(),
                 record_opcodes_filter: (self.is_jump() || self.is_jump_simple())
                     .then(|| OpcodeFilter::new().enabled(OpCode::JUMP).enabled(OpCode::JUMPDEST)),

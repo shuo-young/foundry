@@ -10,8 +10,7 @@ use crate::{
 };
 use core::mem;
 use revm_interpreter::{
-    opcode::InstructionTables, CallOutcome, EOFCreateInputs, InterpreterAction, InterpreterResult,
-    EMPTY_SHARED_MEMORY,
+    opcode::InstructionTables, CallOutcome, EOFCreateInputs, InterpreterAction, InterpreterResult, OpCode, EMPTY_SHARED_MEMORY
 };
 use std::boxed::Box;
 
@@ -27,8 +26,8 @@ pub fn execute_frame<SPEC: Spec, EXT, DB: Database>(
 ) -> Result<InterpreterAction, EVMError<DB::Error>> {
     let interpreter = frame.interpreter_mut();
     // 当前环境下构建一个空memory，执行完后将memory返回
-    // 打印一下interpreter
-    println!("current opcode: {:?}", interpreter.current_opcode());
+    // 打印一下interpreter的first opcode，单个frame里包含多个opcode，记录在instruction_tables里
+    // println!("first opcode in the current frame: {:?}", OpCode::name_by_op(interpreter.current_opcode()));
     
     let memory = mem::replace(shared_memory, EMPTY_SHARED_MEMORY);
     let next_action = match instruction_tables {

@@ -1,3 +1,4 @@
+use alloy_primitives::Address;
 use clap::Parser;
 use foundry_common::TestFilter;
 use foundry_compilers::{FileFilter, ProjectPathsConfig};
@@ -29,6 +30,10 @@ pub struct FilterArgs {
     /// Only run tests in source files matching the specified glob pattern.
     #[arg(long = "match-path", visible_alias = "mp", value_name = "GLOB")]
     pub path_pattern: Option<GlobMatcher>,
+
+    /// A known vulnerable contract being attacked.
+    #[arg(long = "vuln-address", visible_alias = "va", value_name = "ADDRESS")]
+    pub vuln_contract: Option<Address>,
 
     /// Only run tests in source files that do not match the specified glob pattern.
     #[arg(
@@ -78,6 +83,9 @@ impl FilterArgs {
         if self.coverage_pattern_inverse.is_none() {
             self.coverage_pattern_inverse = config.coverage_pattern_inverse.clone().map(Into::into);
         }
+        if self.vuln_contract.is_none() {
+            self.vuln_contract = config.vuln_contract.clone();
+        }
         ProjectPathsAwareFilter { args_filter: self, paths: config.project_paths() }
     }
 }
@@ -91,6 +99,7 @@ impl fmt::Debug for FilterArgs {
             .field("no-match-contract", &self.contract_pattern_inverse.as_ref().map(|r| r.as_str()))
             .field("match-path", &self.path_pattern.as_ref().map(|g| g.as_str()))
             .field("no-match-path", &self.path_pattern_inverse.as_ref().map(|g| g.as_str()))
+            .field("vuln-address", &self.vuln_contract)
             .field("no-match-coverage", &self.coverage_pattern_inverse.as_ref().map(|g| g.as_str()))
             .finish_non_exhaustive()
     }
@@ -162,6 +171,9 @@ impl fmt::Display for FilterArgs {
         }
         if let Some(p) = &self.coverage_pattern_inverse {
             writeln!(f, "\tno-match-coverage: `{}`", p.as_str())?;
+        }
+        if let Some(p) = &self.vuln_contract {
+            writeln!(f, "\tvuln-address: `{}`", p)?;
         }
         Ok(())
     }

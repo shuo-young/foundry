@@ -193,7 +193,6 @@ impl<'a, EXT, DB: Database> ExecutionHandler<'a, EXT, DB> {
         context: &mut Context<EXT, DB>,
         inputs: Box<CallInputs>,
     ) -> Result<FrameOrResult, EVMError<DB::Error>> {
-        println!("call inputs {:?}", inputs);
         (self.call)(context, inputs)
     }
 

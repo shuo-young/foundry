@@ -262,6 +262,8 @@ pub struct Config {
     /// Only run tests in source files matching the specified glob pattern.
     #[serde(rename = "match_path", with = "from_opt_glob")]
     pub path_pattern: Option<globset::Glob>,
+    #[serde(rename = "vuln_address")]
+    pub vuln_contract: Option<Address>,
     /// Only run tests in source files that do not match the specified glob pattern.
     #[serde(rename = "no_match_path", with = "from_opt_glob")]
     pub path_pattern_inverse: Option<globset::Glob>,
@@ -2110,6 +2112,7 @@ impl Default for Config {
             contract_pattern: None,
             contract_pattern_inverse: None,
             path_pattern: None,
+            vuln_contract: None,
             path_pattern_inverse: None,
             coverage_pattern_inverse: None,
             test_failures_file: "cache/test-failures".into(),

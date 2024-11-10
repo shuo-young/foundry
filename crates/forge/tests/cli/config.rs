@@ -63,6 +63,7 @@ forgetest!(can_extract_config_values, |prj, cmd| {
         contract_pattern: None,
         contract_pattern_inverse: None,
         path_pattern: None,
+        vuln_contract: None,
         path_pattern_inverse: None,
         coverage_pattern_inverse: None,
         test_failures_file: "test-cache/test-failures".into(),

@@ -1,5 +1,5 @@
 use super::{install, test::filter::ProjectPathsAwareFilter, watch::WatchArgs};
-use alloy_primitives::U256;
+use alloy_primitives::{hex::ToHexExt, Address, Bytes, U256};
 use chrono::Utc;
 use clap::{Parser, ValueHint};
 use eyre::{Context, OptionExt, Result};
@@ -9,10 +9,7 @@ use forge::{
     multi_runner::matches_contract,
     result::{SuiteResult, TestOutcome, TestStatus},
     traces::{
-        debug::{ContractSources, DebugTraceIdentifier},
-        decode_trace_arena, folded_stack_trace,
-        identifier::SignaturesIdentifier,
-        render_trace_arena, CallTraceDecoderBuilder, InternalTraceMode, TraceKind,
+        debug::{ContractSources, DebugTraceIdentifier}, decode_trace_arena, dump::{AttackTrace}, folded_stack_trace, identifier::SignaturesIdentifier, render_trace_arena, CallTraceDecoderBuilder, InternalTraceMode, TraceKind
     },
     MultiContractRunner, MultiContractRunnerBuilder, TestFilter, TestOptions, TestOptionsBuilder,
 };
@@ -40,7 +37,7 @@ use foundry_debugger::Debugger;
 use foundry_evm::traces::identifier::TraceIdentifiers;
 use regex::Regex;
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     fmt::Write,
     path::PathBuf,
     sync::{mpsc::channel, Arc},
@@ -359,7 +356,7 @@ impl TestArgs {
             InternalTraceMode::None
         };
 
-        println!("{:?}", decode_internal);
+        // println!("decode internal: {:?}", decode_internal);
 
         // Prepare the test builder.
         let config = Arc::new(config);
@@ -519,6 +516,9 @@ impl TestArgs {
         }
 
         let remote_chain_id = runner.evm_opts.get_remote_chain_id().await;
+        println!("LOG: remote chain id: {:?}", remote_chain_id);
+        println!("LOG: endpoints: {:?}", config.rpc_endpoints);
+        println!("LOG: api_key {:?}", config.etherscan_api_key);
         let known_contracts = runner.known_contracts.clone();
 
         let libraries = runner.libraries.clone();
@@ -535,6 +535,16 @@ impl TestArgs {
 
         // Set up trace identifiers.
         let mut identifier = TraceIdentifiers::new().with_local(&known_contracts);
+        let vuln_contract_address = filter.args().vuln_contract.clone();
+
+        identifier = identifier.with_etherscan(&config, remote_chain_id)?;
+        if let Some (etherscan) = &mut identifier.etherscan {
+            println!("LOG: vuln contract {:?}", vuln_contract_address);
+            if let Some(address) = vuln_contract_address {
+                // etherscan metadata fetcher
+                let contract_sources = etherscan.get_source_code_of_contract(address).await;
+            }   
+        }
 
         // Avoid using etherscan for gas report as we decode more traces and this will be
         // expensive.
@@ -570,6 +580,8 @@ impl TestArgs {
         let mut any_test_failed = false;
         for (contract_name, suite_result) in rx {
             let tests = &suite_result.test_results;
+
+            println!("Running tests for {contract_name}....");
 
             // Clear the addresses and labels from previous test.
             decoder.clear_addresses();
@@ -618,12 +630,29 @@ impl TestArgs {
                 decoder
                     .labels
                     .extend(result.labeled_addresses.iter().map(|(k, v)| (*k, v.clone())));
+                
+                let mut attack_traces = AttackTrace::new();                
+                // let chain = match config.get_rpc_url() {
+                //     Some(_) => {
+                //         let provider = utils::get_provider(&config)?;
+                //         utils::get_chain(config.chain, provider).await?
+                //     }
+                //     None => config.chain.unwrap_or_default(),
+                // };    
+
+                // if config.get_rpc_url().is_none() {
+                //     eyre::bail!("You have to provide a contract name or a valid RPC URL")
+                // }
+                // let provider = utils::get_provider(&config)?;
+                // let code = provider.get_code_at(vuln_contract_address.unwrap()).await?;
 
                 // Identify addresses and decode traces.
                 let mut decoded_traces = Vec::with_capacity(result.traces.len());
                 for (kind, arena) in &mut result.traces.clone() {
                     if identify_addresses {
                         decoder.identify(arena, &mut identifier);
+                        // we can know all contract_address: contract_name map from the identify method
+                        println!("identify address: {:?}", decoder.contracts);
                     }
 
                     // verbosity:
@@ -641,11 +670,48 @@ impl TestArgs {
                         TraceKind::Deployment => false,
                     };
 
+                    // 这里尝试之前的逻辑，在decode之后才有属性值，可能之后的逻辑得重新抽象一个module放在decode之后进行处理
                     if should_include {
                         decode_trace_arena(arena, &decoder).await?;
                         decoded_traces.push(render_trace_arena(arena));
                     }
+                    // after write the decoded trace to the decoded_traces
+                    let call_nodes = arena.clone().arena.arena;
+                    
+                    if let Some(vuln_contract_address) = vuln_contract_address {
+                        attack_traces.from = call_nodes[0].trace.address;
+                        attack_traces.to = vuln_contract_address;
+
+                        for node in call_nodes.iter() {
+                            let call_trace = &node.trace;
+                            let cur_node = &call_nodes[call_trace.node_id];
+                            let parent = cur_node.parent;
+                            let children = &cur_node.children;
+
+                            println!(
+                                "LOG: call trace {:?}, {:?}, {:?}, {:?}, {:?}",
+                                call_trace.node_id, call_trace.caller, call_trace.address, parent, children
+                            );
+
+                            if vuln_contract_address == call_trace.address {
+                                println!("LOG: vuln contract {:?} is called", vuln_contract_address);
+                                let mut chain = Vec::new();
+                                let mut current_id = Some(call_trace.node_id);
+
+                                while let Some(id) = current_id {
+                                    chain.push(id);
+                                    current_id = call_nodes[id].parent;
+                                }
+                                chain.reverse();
+                                println!("LOG: call chain towards vuln contract {:?}", chain);
+                                attack_traces.add_trace(chain);
+                            }
+                        }
+                    }
                 }
+
+                println!("LOG: attack traces {:?}", attack_traces);
+                // process the attack traces
 
                 if !decoded_traces.is_empty() {
                     shell::println("Traces:")?;

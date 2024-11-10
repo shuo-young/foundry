@@ -39,6 +39,8 @@ pub struct DecodedCallTrace {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CallTrace {
+    /// ? Add its node id
+    pub node_id: usize,
     /// The depth of the call.
     pub depth: usize,
     /// Whether the call was successful.
@@ -97,6 +99,10 @@ impl CallTrace {
     pub const fn is_error(&self) -> bool {
         !self.status.is_ok()
     }
+
+    // pub fn get_node(&self) -> CallTraceNode {
+    //     ;
+    // }
 
     /// Returns true if the status code is a revert.
     #[inline]
@@ -615,6 +621,8 @@ pub struct CallTraceStep {
     /// Opcode to be executed
     #[cfg_attr(feature = "serde", serde(with = "opcode_serde"))]
     pub op: OpCode,
+    /// Opcode name
+    pub op_name: String,
     /// Current contract address
     pub contract: Address,
     /// Stack before step execution

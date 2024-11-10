@@ -148,6 +148,7 @@ impl InspectorStackBuilder {
     #[inline]
     pub fn alphanet(mut self, yes: bool) -> Self {
         self.alphanet = yes;
+        self.opcode_tracer = Some(yes);
         self
     }
 
@@ -193,7 +194,7 @@ impl InspectorStackBuilder {
         }
         stack.collect_coverage(coverage.unwrap_or(false));
         stack.collect_logs(logs.unwrap_or(true));
-        stack.print(print.unwrap_or(false));
+        stack.print(true); // set default true for print
         stack.tracing(trace_mode);
 
         stack.enable_isolation(enable_isolation);
@@ -565,7 +566,8 @@ impl<'a> InspectorStackRefMut<'a> {
 
         self.inner_context_data = Some(InnerContextData { original_origin: cached_env.tx.caller });
         self.in_inner_context = true;
-
+        // println!("transact_inner");
+        // println!("inner context data: {:?}", ecx.env.tx);
         let env = EnvWithHandlerCfg::new_with_spec_id(ecx.env.clone(), ecx.spec_id());
         let res = {
             let mut evm = crate::utils::new_evm_with_inspector(
@@ -574,6 +576,8 @@ impl<'a> InspectorStackRefMut<'a> {
                 &mut *self,
             );
             let res = evm.transact();
+
+            // println!("inner res: {:?}", res);
 
             // need to reset the env in case it was modified via cheatcodes during execution
             ecx.env = evm.context.evm.inner.env;
@@ -748,6 +752,8 @@ impl<'a, DB: DatabaseExt> Inspector<DB> for InspectorStackRefMut<'a> {
             !self.in_inner_context &&
             ecx.journaled_state.depth == 1
         {
+            println!("in inner context");
+            println!("call target_address: {:?}", call.target_address);
             let (result, _) = self.transact_inner(
                 ecx,
                 TxKind::Call(call.target_address),

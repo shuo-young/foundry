@@ -35,19 +35,19 @@ impl<DB: Database> Inspector<DB> for CustomPrintTracer {
 
         let memory_size = interp.shared_memory.len();
 
-        println!(
-            "depth:{}, PC:{}, gas:{:#x}({}), OPCODE: {:?}({:?})  refund:{:#x}({}) Stack:{:?}, Data size:{}",
-            context.journaled_state.depth(),
-            interp.program_counter(),
-            gas_remaining,
-            gas_remaining,
-            name,
-            opcode,
-            interp.gas.refunded(),
-            interp.gas.refunded(),
-            interp.stack.data(),
-            memory_size,
-        );
+        // println!(
+        //     "depth:{}, PC:{}, gas:{:#x}({}), OPCODE: {:?}({:?})  refund:{:#x}({}) Stack:{:?}, Data size:{}",
+        //     context.journaled_state.depth(),
+        //     interp.program_counter(),
+        //     gas_remaining,
+        //     gas_remaining,
+        //     name,
+        //     opcode,
+        //     interp.gas.refunded(),
+        //     interp.gas.refunded(),
+        //     interp.stack.data(),
+        //     memory_size,
+        // );
 
         self.gas_inspector.step(interp, context);
     }
@@ -79,15 +79,15 @@ impl<DB: Database> Inspector<DB> for CustomPrintTracer {
         _context: &mut EvmContext<DB>,
         inputs: &mut CallInputs,
     ) -> Option<CallOutcome> {
-        println!(
-            "SM Address: {:?}, caller:{:?},target:{:?} is_static:{:?}, transfer:{:?}, input_size:{:?}",
-            inputs.bytecode_address,
-            inputs.caller,
-            inputs.target_address,
-            inputs.is_static,
-            inputs.value,
-            inputs.input.len(),
-        );
+        // println!(
+        //     "SM Address: {:?}, caller:{:?},target:{:?} is_static:{:?}, transfer:{:?}, input_size:{:?}",
+        //     inputs.bytecode_address,
+        //     inputs.caller,
+        //     inputs.target_address,
+        //     inputs.is_static,
+        //     inputs.value,
+        //     inputs.input.len(),
+        // );
         None
     }
 
@@ -96,18 +96,18 @@ impl<DB: Database> Inspector<DB> for CustomPrintTracer {
         _context: &mut EvmContext<DB>,
         inputs: &mut CreateInputs,
     ) -> Option<CreateOutcome> {
-        println!(
-            "CREATE CALL: caller:{:?}, scheme:{:?}, value:{:?}, init_code:{:?}, gas:{:?}",
-            inputs.caller, inputs.scheme, inputs.value, inputs.init_code, inputs.gas_limit
-        );
+        // println!(
+        //     "CREATE CALL: caller:{:?}, scheme:{:?}, value:{:?}, init_code:{:?}, gas:{:?}",
+        //     inputs.caller, inputs.scheme, inputs.value, inputs.init_code, inputs.gas_limit
+        // );
         None
     }
 
     fn selfdestruct(&mut self, contract: Address, target: Address, value: U256) {
-        println!(
-            "SELFDESTRUCT: contract: {:?}, refund target: {:?}, value {:?}",
-            contract, target, value
-        );
+        // println!(
+        //     "SELFDESTRUCT: contract: {:?}, refund target: {:?}, value {:?}",
+        //     contract, target, value
+        // );
     }
 }
 

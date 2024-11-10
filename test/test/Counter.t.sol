@@ -18,7 +18,6 @@ contract CounterTest is Test {
     // }
 
     function test_1() public {
-        console.log("Hello, World!");
         counter = new Counter();
         counter.setNumber(0);
         counter.increment();

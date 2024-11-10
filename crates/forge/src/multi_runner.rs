@@ -248,7 +248,7 @@ impl MultiContractRunner {
             Some(artifact_id.version.clone()),
         );
 
-        let trace_mode = TraceMode::default()
+        let trace_mode = TraceMode::Debug
             .with_debug(self.debug)
             .with_decode_internal(self.decode_internal)
             .with_verbosity(self.evm_opts.verbosity);

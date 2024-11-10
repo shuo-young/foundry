@@ -7,7 +7,7 @@ use super::types::{CallTrace, CallTraceNode, TraceMemberOrder};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CallTraceArena {
     /// The arena of recorded trace nodes
-    pub(crate) arena: Vec<CallTraceNode>,
+    pub arena: Vec<CallTraceNode>,
 }
 
 impl Default for CallTraceArena {
@@ -51,18 +51,20 @@ impl CallTraceArena {
         &mut self,
         mut entry: usize,
         kind: PushTraceKind,
-        new_trace: CallTrace,
+        mut new_trace: CallTrace,
     ) -> usize {
         loop {
             match new_trace.depth {
                 // The entry node, just update it
                 0 => {
+                    new_trace.node_id = self.arena[0].idx;
                     self.arena[0].trace = new_trace;
                     return 0;
                 }
                 // We found the parent node, add the new trace as a child
                 _ if self.arena[entry].trace.depth == new_trace.depth - 1 => {
                     let id = self.arena.len();
+                    new_trace.node_id = id;
                     let node = CallTraceNode {
                         parent: Some(entry),
                         trace: new_trace,

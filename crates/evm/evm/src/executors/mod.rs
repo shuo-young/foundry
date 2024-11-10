@@ -32,6 +32,7 @@ use revm::{
         SpecId, TxEnv, TxKind,
     },
 };
+use revm_inspectors::tracing::types::DecodedTraceStep;
 use std::{borrow::Cow, collections::HashMap};
 
 mod builder;
@@ -332,6 +333,7 @@ impl Executor {
         // 构建calldata执行tx
         let result = self.call_raw(from, to, calldata, value)?;
         // decode revm返回的callres
+        // println!("LOG: call res {:?}", result.traces);
         result.into_decoded_result(func, rd)
     }
 
@@ -362,6 +364,7 @@ impl Executor {
     ) -> Result<CallResult, EvmError> {
         let calldata = Bytes::from(func.abi_encode_input(args)?);
         let result = self.transact_raw(from, to, calldata, value)?;
+        // println!("LOG: transact res {:?}", result);
         result.into_decoded_result(func, rd)
     }
 
@@ -398,7 +401,7 @@ impl Executor {
         let mut backend = CowBackend::new_borrowed(self.backend());
         // key function for entering the EVM
         let result = backend.inspect(&mut env, &mut inspector)?;
-        println!("call with env res {:?}", result);
+        // println!("LOG: call with env res {:?}", result);
         convert_executed_result(env, inspector, result, backend.has_snapshot_failure())
     }
 
@@ -414,7 +417,7 @@ impl Executor {
         let mut result =
             convert_executed_result(env, inspector, result, backend.has_snapshot_failure())?;
         self.commit(&mut result);
-        println!("transact with env res {:?}", result);
+        // println!("LOG: transact with env res {:?}", result);
         Ok(result)
     }
 

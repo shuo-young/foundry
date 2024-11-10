@@ -431,6 +431,7 @@ impl TracingInspector {
             pc: interp.program_counter(),
             code_section_idx: interp.function_stack.current_code_idx,
             op,
+            op_name: OpCode::name_by_op(interp.current_opcode()).to_string(),
             contract: interp.contract.target_address,
             stack,
             push_stack: None,

@@ -176,6 +176,8 @@ impl<W: Write> TraceWriter<W> {
                 label = trace.decoded.label.as_deref().unwrap_or("<unknown>")
             )?;
         } else {
+            // println!("LOG: calldata {:?}", &trace.decoded.call_data);
+
             let (func_name, inputs) = match &trace.decoded.call_data {
                 Some(DecodedCallData { signature, args }) => {
                     let name = signature.split('(').next().unwrap();
@@ -289,7 +291,9 @@ impl<W: Write> TraceWriter<W> {
                     call.func_name,
                     call.args.as_ref().map(|v| format!("({})", v.join(", "))).unwrap_or_default()
                 )?;
-
+                
+                // println!("LOG: func_name {:?}", call.func_name);
+                // println!("LOG: args {:?}", call.args);
                 let end_item_idx =
                     self.write_items_until(nodes, node_idx, item_idx + 1, |item_idx: usize| {
                         matches!(&node.ordering[item_idx], TraceMemberOrder::Step(idx) if *idx == *end_idx)
